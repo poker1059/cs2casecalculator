@@ -10,9 +10,11 @@
     <h2>CS2 Case Planner</h2>
 
     <div class="controls">
-        <label>Total Money Available: $<input type="number" id="budget" value="25.00" step="0.01" /></label><br /><br />
-        <label>Key Cost: $<span id="keyCostDisplay">2.49</span></label><br /><br />
-        <label>Tax Rate (%): <input type="number" id="taxRate" value="7.5" step="0.1" /></label><br /><br />
+        <div class="input-line-group">
+            <label>Total Money Available: $<input type="number" id="budget" value="25.00" step="0.01" /></label>
+            <label>Key Cost: $<span id="keyCostDisplay">2.49</span></label>
+            <label>Tax Rate (%): <input type="number" id="taxRate" value="7.5" step="0.1" /></label>
+        </div>
         <button id="refreshPricesBtn">🔄 Refresh Prices</button>
     </div>
 
@@ -36,11 +38,12 @@
 
     <button id="addCaseBtn" style="margin-top: 10px;">+ Add Case</button>
 
-    <div class="summary">
-        <p>Total Cases: <span id="totalCases">0</span></p> <p>Total Spent: $<span id="totalSpent">0.00</span></p>
+    <div class="summary-line-group">
+        <p>Total Cases: <span id="totalCases">0</span></p> 
+        <p>Total Spent: $<span id="totalSpent">0.00</span></p>
         <p>Leftover Balance: $<span id="leftover">0.00</span></p>
-        <p id="deficitMessage" class="deficit" style="display: none;"></p>
     </div>
+    <p id="deficitMessage" class="deficit" style="display: none;"></p> 
 
     <hr>
 
@@ -50,6 +53,7 @@
         <button id="sortNameDesc">Sort Name (Z-A)</button>
         <button id="sortPriceAsc">Sort Price (Low-High)</button>
         <button id="sortPriceDesc">Sort Price (High-Low)</button>
+        <button id="sortRoiBtn">Sort by ROI</button>
     </div>
     <div class="case-grid" id="availableCasesGrid">
         <p>Loading case prices...</p>

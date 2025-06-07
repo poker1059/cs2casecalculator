@@ -2,41 +2,77 @@ body {
     font-family: Arial, sans-serif;
     padding: 20px;
     background-color: #f2f2f2;
+    color: #333; /* Added: General text color */
 }
+
+h2, h3 {
+    text-align: center; /* Centered headings */
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+hr {
+    margin: 20px 0; /* Spacing for horizontal rules */
+    border: 0;
+    border-top: 1px solid #eee;
+}
+
+/* --- Controls Section Styles (New Flexbox Layout) --- */
+.controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens if needed */
+    justify-content: space-between; /* Pushes input group to left, refresh button to right */
+    align-items: flex-end; /* Align items at the bottom */
+    margin-bottom: 20px;
+    gap: 15px; /* Spacing between the input group and the refresh button */
+}
+
+.input-line-group { /* Wrapper for budget, key cost, tax rate labels */
+    display: flex;
+    flex-wrap: wrap; /* Allow labels to wrap if screen is too narrow */
+    gap: 20px; /* Space between each label/input pair */
+    align-items: center; /* Vertically align items in the group */
+}
+
+.controls label {
+    white-space: nowrap; /* Prevent labels from breaking onto multiple lines */
+}
+
+/* Specific styling for inputs within the controls section */
+.controls input[type="number"],
+.controls input[type="text"] { /* Applies to budget and taxRate inputs */
+    width: 80px; /* Adjusted width for these inputs for a tighter line */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px; /* Slightly more rounded */
+}
+
+/* --- Table Styles --- */
 table {
     border-collapse: collapse;
     background: white;
     width: 100%;
     margin-bottom: 20px; /* Add some space below the table */
-    table-layout: fixed; /* NEW: This makes column widths more predictable */
+    table-layout: fixed; /* Makes column widths more predictable */
 }
 th, td {
     padding: 10px;
     text-align: left;
     border: 1px solid #ddd; /* Add borders for better table appearance */
-    vertical-align: middle; /* NEW: Vertically align content in the middle of cells */
+    vertical-align: middle; /* Vertically align content in the middle of cells */
 }
 thead th {
     background-color: #e9e9e9;
 }
-/* OLD: input[type=number], input[type=text], select { width: 100px; ... } */
-/* NEW: These styles are now more specific to table inputs/selects and use 100% width */
-input[type=number], input[type=text] { /* Keep original styles for general inputs if needed */
-    width: 100px; /* Adjust if other inputs need specific width */
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-}
 
-/* NEW: Styles for inputs and selects specifically within the table body */
+/* Styles for inputs and selects specifically within the table body cells */
 #caseTableBody select,
 #caseTableBody input[type="number"] {
     width: 100%; /* Make them fill their parent cell */
     box-sizing: border-box; /* Include padding and border in the element's total width */
 }
 
-/* NEW: Specific Column Widths for the planning table */
-/* Adjust these percentages as needed to get your desired look */
+/* Specific Column Widths for the planning table */
 #caseTableBody td:nth-child(1) { /* Case Column */
     width: 28%; /* Increased from 25% to give more room for long names */
 }
@@ -56,40 +92,63 @@ input[type=number], input[type=text] { /* Keep original styles for general input
     width: 16%; /* Adjusted to make total sum 100% with other new widths */
 }
 
-
-.result {
-    font-weight: bold;
-    margin-top: 20px;
+/* --- Summary Section Styles (New Flexbox Layout) --- */
+.summary-line-group { /* New container for Total Cases, Spent, Leftover */
+    display: flex;
+    flex-wrap: wrap; /* Allow summary items to wrap on smaller screens */
+    justify-content: space-around; /* Distribute items evenly with space around them */
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    border-top: 1px solid #eee; /* Top line for separation */
+    border-bottom: 1px solid #eee; /* Bottom line for separation */
 }
+
+.summary-line-group p {
+    margin: 5px 15px; /* Add some horizontal margin around each paragraph */
+    white-space: nowrap; /* Prevent summary texts from breaking */
+    font-weight: bold; /* Make summary texts bold (similar to original .result) */
+}
+
+/* Deficit message */
 .deficit {
     color: red;
-    margin-top: 10px;
+    margin-top: 5px; /* Reduced margin */
+    display: block !important; /* Override inline style from JS when it should be visible */
+    font-weight: bold; /* Ensure it's bold */
+    text-align: center; /* Center the deficit message */
 }
+
+/* --- Button Styles (Combined & Enhanced) --- */
 button {
-    margin-top: 10px;
     padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
+    border: 1px solid #007bff; /* Added border for better visual definition */
+    border-radius: 4px; /* Consistent border radius */
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    font-size: 14px;
-    margin-right: 5px; /* Spacing between buttons */
+    font-size: 14px; /* Kept existing font size */
+    margin-right: 5px; /* Spacing between buttons (kept for general buttons) */
+    transition: background-color 0.2s, border-color 0.2s; /* Smooth transition on hover */
 }
 button:hover {
     background-color: #0056b3;
+    border-color: #0056b3; /* Darker border on hover */
 }
 button:disabled {
     background-color: #cccccc;
+    border-color: #999999; /* Greyer border when disabled */
     cursor: not-allowed;
 }
 
-/* New Grid Styles */
+/* --- Available Cases Grid Styles --- */
 .sort-controls {
     margin-bottom: 15px;
     display: flex; /* Arrange buttons in a row */
     flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 5px; /* Space between buttons */
+    gap: 10px; /* Increased gap for better spacing between sort buttons */
+    justify-content: center; /* Center the sort buttons */
 }
 
 .case-grid {
@@ -112,22 +171,49 @@ button:disabled {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 120px; /* Ensure cards have a minimum height */
+    min-height: 230px; /* Increased to give more vertical space for images and content */
 }
 
 .case-card h4 {
     margin-top: 0;
-    margin-bottom: 5px;
-    font-size: 1em;
+    margin-bottom: 5px; /* Space between title and image */
+    font-size: 1em; /* Kept original size */
     color: #333;
     word-break: break-word; /* Prevent long names from overflowing */
+    min-height: 3em; /* Give enough space for longer names on multiple lines */
+    display: flex; /* Added for vertical centering if name is short */
+    align-items: center; /* Vertically center name if it's short */
+    justify-content: center; /* Horizontally center name */
 }
 
-.case-card p {
-    margin: 5px 0;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: #28a745; /* Green for price */
+/* Styles for the case images within case-card */
+.case-card .case-image {
+    max-width: 90%;
+    max-height: 120px; /* Increased to allow images to be larger, adjust as needed */
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background-color: #eee;
+    padding: 2px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block; /* Ensures margins auto work correctly */
+}
+
+.case-card .case-roi {
+    font-size: 0.85em; /* Slightly smaller than price */
+    color: #161616; /* Greyish color for subtlety */
+    margin-top: 0; /* Remove top margin from the default paragraph */
+    margin-bottom: 2px; /* Small space between ROI and price */
+    font-weight: normal; /* Ensure it's not bold */
+}
+
+.case-card .case-price {
+    margin: 5px 0; /* Retained margin */
+    font-size: 1.1em; /* Retained font size */
+    font-weight: bold; /* Retained bold */
+    color: #28a745; /* Retained green color for price */
 }
 
 .case-card .add-to-planner-btn {
@@ -138,6 +224,8 @@ button:disabled {
     border-radius: 3px;
     cursor: pointer;
     font-size: 0.9em;
+    margin-top: auto; /* Pushes button to the bottom of the flex container */
+    width: 100%; /* Make button fill card width */
 }
 
 .case-card .add-to-planner-btn:hover {
