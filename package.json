@@ -2,7 +2,7 @@
   "name": "cs2-case-planner",
   "version": "1.0.0",
   "description": "CS2 Case Planner Desktop App",
-  "main": "main.js",
+  "main": "main.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
@@ -27,12 +27,12 @@
       "output": "dist"
     },
     "files": [
-      "main.js",
+      "main.cjs",
       "renderer.js",
-      "preload.js",
+      "preload.cjs",
       "index.html",
       "style.css",
-      "steam.js",
+      "steam.cjs",
       "package.json"
     ],
     "win": {

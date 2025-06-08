@@ -7,61 +7,74 @@
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <h2>CS2 Case Planner</h2>
+    <div class="content-wrapper">
+        <h2>CS2 Case Planner</h2>
 
-    <div class="controls">
-        <div class="input-line-group">
-            <label>Total Money Available: $<input type="number" id="budget" value="25.00" step="0.01" /></label>
-            <label>Key Cost: $<span id="keyCostDisplay">2.49</span></label>
-            <label>Tax Rate (%): <input type="number" id="taxRate" value="7.5" step="0.1" /></label>
+        <div class="controls">
+            <div class="input-line-group">
+                <label>Total Money Available: $<input type="number" id="budget" value="25.00" step="0.01" /></label>
+                <label>Key Cost: $<span id="keyCostDisplay">2.49</span></label>
+                <label for="taxRateInput">Tax Rate (%):</label>
+                <input type="number" id="taxRateInput" value="15" min="0" step="0.01">
+            </div>
+            <button id="refresh-prices-btn">🔄 Refresh Prices</button>
         </div>
-        <button id="refreshPricesBtn">🔄 Refresh Prices</button>
-    </div>
 
-    <div class="planner-search-container">
-        <input type="text" id="plannerSearchInput" placeholder="Search planned cases..." list="caseNamesDatalist">
-        <datalist id="caseNamesDatalist"></datalist>
-        <button id="addSelectedCaseBtn">Add Selected Case</button> </div>
+        <div id="loading-indicator" style="display: none;">Loading case prices...</div>
+        <div id="notification" class="notification"></div>
 
-    <hr>
+        <div class="planner-search-container">
+            <input type="text" id="plannerSearchInput" placeholder="Search planned cases..." list="caseNamesDatalist">
+            <datalist id="caseNamesDatalist"></datalist>
+            <button id="addSelectedCaseBtn">Add Selected Case</button>
+        </div>
 
-    <h3>Your Planned Cases</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Case</th>
-                <th>Case Cost ($)</th>
-                <th>Quantity</th>
-                <th>Total Case Cost ($)</th>
-                <th>Total w/ Keys ($)</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="caseTableBody">
-        </tbody>
-    </table>
+        <hr>
 
-    <button id="addCaseBtn" style="margin-top: 10px;">+ Add Case</button>
+        <h3>Your Planned Cases</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Case</th>
+                    <th>Case Cost ($)</th>
+                    <th>Quantity</th>
+                    <th>Total Case Cost ($)</th>
+                    <th>Total Key Cost ($)</th>
+                    <th>Total w/ Keys ($)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="caseTableBody">
+            </tbody>
+        </table>
 
-    <div class="summary-line-group">
-        <p>Total Cases: <span id="totalCases">0</span></p> 
-        <p>Total Spent: $<span id="totalSpent">0.00</span></p>
-        <p>Leftover Balance: $<span id="leftover">0.00</span></p>
-    </div>
-    <p id="deficitMessage" class="deficit"></p>
+        <div class="summary-line-group">
+            <p>Total Cases: <span id="totalCases">0</span></p>
+            <p>Total Spent: $<span id="totalSpent">0.00</span></p>
+            <p><span id="leftoverLabel">Amount Leftover</span>: $<span id="leftover">0.00</span></p> 
+            
+            <p>Total Cost (Cases + Keys): $<span id="total-cost-display">0.00</span></p>
+            <p>Keys Needed (for cases): <span id="total-keys-needed-display">0</span></p>
+            <p>Expected ROI (Net Gain): $<span id="total-expected-roi-display">0.00</span></p>
+            <p>
+                Your Keys: <input type="number" id="key-quantity-input" value="0" min="0" style="width: 60px;">
+                Remaining Keys: <span id="remaining-keys-display">0</span>
+            </p>
+        </div>
 
-    <hr>
+        <hr>
 
-    <h3>Available Cases & Prices</h3>
-    <div class="sort-controls">
-        <button id="sortNameAsc">Sort Name (A-Z)</button>
-        <button id="sortNameDesc">Sort Name (Z-A)</button>
-        <button id="sortPriceAsc">Sort Price (Low-High)</button>
-        <button id="sortPriceDesc">Sort Price (High-Low)</button>
-        <button id="sortRoiBtn">Sort by ROI</button>
-    </div>
-    <div class="case-grid" id="availableCasesGrid">
-        <p>Loading case prices...</p>
+        <h3>Available Cases & Prices</h3>
+        <div class="sort-controls">
+            <button id="sortNameAsc">Sort Name (A-Z)</button>
+            <button id="sortNameDesc">Sort Name (Z-A)</button>
+            <button id="sortPriceAsc">Sort Price (Low-High)</button>
+            <button id="sortPriceDesc">Sort Price (High-Low)</button>
+            <button id="sortRoiBtn">Sort by ROI</button>
+        </div>
+        <div class="case-grid" id="availableCasesGrid">
+            <p>Loading case prices...</p>
+        </div>
     </div>
 
     <script src="renderer.js"></script>

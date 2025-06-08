@@ -1,567 +1,537 @@
 // renderer.js
 
-// Global variable to store fetched case data (now includes ROI, csroiImageUrl, steamImageUrl)
-let availableCaseData = []; 
-// Global variable to manage sorting of available cases
-let currentSort = { type: 'roi', order: 'desc' }; // Default sort by ROI descending
+// --- Global Constants ---
+// Original constants for table bodies are likely unused if HTML structure changed.
+// Keep them for reference if needed elsewhere.
+const CASES_TABLE_BODY = document.getElementById('casesTableBody'); 
+const PLANNER_TABLE_BODY = document.getElementById('plannerTableBody'); 
+const ADD_ALL_TO_PLANNER_BUTTON = document.getElementById('addAllToPlanner'); 
+const CLEAR_PLANNER_BUTTON = document.getElementById('clearPlanner'); 
 
-// Key Cost constant - ensure this matches the actual key cost
-const KEY_COST = 2.49; // From your HTML span#keyCostDisplay
+// Removed: const KEY_TAX_RATE = 0.00; // This will now be read from input
 
-// --- DOM Element Selections ---
-const tableBody = document.getElementById('caseTableBody');
-const addCaseBtn = document.getElementById('addCaseBtn');
-const refreshPricesBtn = document.getElementById('refreshPricesBtn');
-const totalSpentEl = document.getElementById('totalSpent');
-const leftoverEl = document.getElementById('leftover');
-const deficitMsg = document.getElementById('deficitMessage');
-const taxRateInput = document.getElementById('taxRate');
-const budgetInput = document.getElementById('budget');
-const totalCasesEl = document.getElementById('totalCases');
-const keyCostDisplay = document.getElementById('keyCostDisplay'); // Ensure this matches the ID in HTML
+const DEFAULT_KEY_PRICE = 2.49; // Default key price if not provided by data (used for cases without keyCostSteam from CSROI)
 
-// Available Cases Grid & Sort Buttons
-const availableCasesGrid = document.getElementById('availableCasesGrid');
-const sortNameAscBtn = document.getElementById('sortNameAsc');
-const sortNameDescBtn = document.getElementById('sortNameDesc');
-const sortPriceAscBtn = document.getElementById('sortPriceAsc');
-const sortPriceDescBtn = document.getElementById('sortPriceDesc');
-const sortRoiBtn = document.getElementById('sortRoiBtn'); // NEW: Sort by ROI button
+let availableCaseData = []; // Array used for the grid display
+let cases = [];             // Array used for the planner dropdown and table (subset of availableCaseData)
+let availableCaseMap = new Map(); // The persistent source of truth for all cases
 
-// NEW: DOM Element Selections for search
-const plannerSearchInput = document.getElementById('plannerSearchInput');
-const caseNamesDatalist = document.getElementById('caseNamesDatalist');
-const addSelectedCaseBtn = document.getElementById('addSelectedCaseBtn'); 
+// Global variable to keep track of the current sort state
+let currentSort = {
+    key: 'roi',    // Default sort key
+    direction: 'desc' // Default sort direction
+};
 
-// --- Initial Data for Planner (will be updated by live prices) ---
-// This 'cases' array is specifically for managing the planner's dropdown and current selections.
-// Its prices will be updated by 'updateLivePrices'.
-let cases = [
-    { name: "CS:GO Weapon Case", price: 0, roi: null }, // Price will be updated dynamically
-    { name: "CS:GO Weapon Case 2", price: 0, roi: null },
-    { name: "CS:GO Weapon Case 3", price: 0, roi: null },
-    { name: "eSports 2013 Case", price: 0, roi: null },
-    { name: "eSports 2013 Winter Case", price: 0, roi: null },
-    { name: "eSports 2014 Summer Case", price: 0, roi: null },
-    { name: "Operation Bravo Case", price: 0, roi: null },
-    { name: "Operation Phoenix Case", price: 0, roi: null },
-    { name: "Operation Breakout Case", price: 0, roi: null },
-    { name: "Operation Vanguard Case", price: 0, roi: null },
-    { name: "Chroma Case", price: 0, roi: null },
-    { name: "Chroma 2 Case", price: 0, roi: null },
-    { name: "Falchion Case", price: 0, roi: null },
-    { name: "Shadow Case", price: 0, roi: null },
-    { name: "Revolver Case", price: 0, roi: null },
-    { name: "Operation Wildfire Case", price: 0, roi: null },
-    { name: "Chroma 3 Case", price: 0, roi: null },
-    { name: "Gamma Case", price: 0, roi: null },
-    { name: "Gamma 2 Case", price: 0, roi: null },
-    { name: "Glove Case", price: 0, roi: null },
-    { name: "Spectrum Case", price: 0, roi: null },
-    { name: "Operation Hydra Case", price: 0, roi: null },
-    { name: "Spectrum 2 Case", price: 0, roi: null },
-    { name: "Clutch Case", price: 0, roi: null },
-    { name: "Horizon Case", price: 0, roi: null },
-    { name: "Danger Zone Case", price: 0, roi: null },
-    { name: "Prisma Case", price: 0, roi: null },
-    { name: "CS20 Case", price: 0, roi: null },
-    { name: "Shattered Web Case", price: 0, roi: null },
-    { name: "Prisma 2 Case", price: 0, roi: null },
-    { name: "Fracture Case", price: 0, roi: null },
-    { name: "Snakebite Case", price: 0, roi: null },
-    { name: "Operation Riptide Case", price: 0, roi: null },
-    { name: "Dreams & Nightmares Case", price: 0, roi: null },
-    { name: "Recoil Case", price: 0, roi: null },
-    { name: "Revolution Case", price: 0, roi: null },
-    { name: "Anubis Collection Package", price: 0, roi: null },
-    { name: "Kilowatt Case", price: 0, roi: null }
-];
+// Global key quantity variable (no longer tied to an input, if removed from HTML)
+let keyQuantity = 0; // Initialize key quantity globally. This will be 0 unless manually updated.
+
 
 // --- Event Listeners ---
-function populatePlannerDatalist() {
-    caseNamesDatalist.innerHTML = ''; // Clear existing options
-    const uniqueCaseNames = new Set(cases.map(c => c.name)); 
-    uniqueCaseNames.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        caseNamesDatalist.appendChild(option);
-    });
-}
-function filterPlannedCases() {
-    const searchTerm = plannerSearchInput.value.toLowerCase().trim();
-    const rows = tableBody.querySelectorAll('tr');
+document.getElementById('refresh-prices-btn').addEventListener('click', updateLivePrices);
 
-    rows.forEach(row => {
-        if (row.style.display === 'none') { // If it was already hidden, leave it hidden for this check
-            // We need to re-evaluate it based on the new search term
+// Planner Add Case: Using the 'Add Selected Case' button now
+document.getElementById('addSelectedCaseBtn').addEventListener('click', addCaseFromSearchInput);
+
+// Event listener for removing a case (within the table body)
+document.getElementById('caseTableBody').addEventListener('click', function(event) {
+    if (event.target.classList.contains('remove-case-btn')) {
+        const row = event.target.closest('tr');
+        const caseName = row.dataset.caseName;
+        removeCaseFromPlanner(caseName);
+    }
+});
+
+// Event listener for updating case quantity (within the table body)
+document.getElementById('caseTableBody').addEventListener('change', function(event) {
+    if (event.target.classList.contains('case-quantity-input')) {
+        const row = event.target.closest('tr');
+        const caseName = row.dataset.caseName;
+        const newQuantity = parseInt(event.target.value);
+        if (!isNaN(newQuantity) && newQuantity >= 0) {
+            updateCaseQuantity(caseName, newQuantity);
         }
+    }
+});
 
-        const caseSelect = row.children[0].querySelector('select');
-        
-        if (caseSelect && caseSelect.options[caseSelect.selectedIndex]) {
-            const caseName = caseSelect.options[caseSelect.selectedIndex].textContent.toLowerCase();
-            
-            if (caseName.includes(searchTerm) || searchTerm === '') {
-                row.style.display = '';
+// NEW: Event listener for the Budget input field
+document.getElementById('budget').addEventListener('input', updateTotals); // Use 'input' for real-time updates
+
+// NEW: Event listener for the Tax Rate input field
+// Assumes your tax rate input has the ID 'taxRateInput'
+document.getElementById('taxRateInput').addEventListener('input', () => {
+    console.log('Tax rate input changed. Recalculating...');
+    rebuildTable(); // Rebuilds the table, which in turn calls updateTotals()
+});
+
+
+// --- Sort Button Event Listeners ---
+document.getElementById('sortNameAsc').addEventListener('click', () => {
+    console.log('Sort Name Asc clicked');
+    sortCases('name', 'asc');
+});
+document.getElementById('sortNameDesc').addEventListener('click', () => {
+    console.log('Sort Name Desc clicked');
+    sortCases('name', 'desc');
+});
+document.getElementById('sortPriceAsc').addEventListener('click', () => {
+    console.log('Sort Price Asc clicked');
+    sortCases('price', 'asc');
+});
+document.getElementById('sortPriceDesc').addEventListener('click', () => {
+    console.log('Sort Price Desc clicked');
+    sortCases('price', 'desc');
+});
+document.getElementById('sortRoiBtn').addEventListener('click', () => {
+    console.log('Sort ROI clicked');
+    sortCases('roi', 'desc'); // ROI is typically sorted descending (highest ROI first)
+});
+
+
+// --- Utility Functions ---
+
+// NEW: Function to get the current tax rate from the input field
+function getTaxRate() {
+    const taxRateInput = document.getElementById('taxRateInput');
+    if (taxRateInput) {
+        // Read value, parse as float, default to 0 if NaN, then divide by 100 for percentage
+        const rate = parseFloat(taxRateInput.value) || 0;
+        return rate / 100; // Convert percentage (e.g., 15) to decimal (0.15)
+    }
+    console.warn("Tax rate input element not found, defaulting tax rate to 0.");
+    return 0; // Default to 0 if input element doesn't exist
+}
+
+function showNotification(message, type) {
+    const notification = document.getElementById('notification');
+    if (notification) { // Ensure element exists before trying to use it
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
+        setTimeout(() => {
+            notification.className = notification.className.replace('show', '');
+        }, 3000); // Hide after 3 seconds
+    } else {
+        console.warn("Notification element not found.");
+    }
+}
+
+function showLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) { // Ensure element exists
+        loadingIndicator.style.display = 'block';
+    } else {
+        console.warn("Loading indicator element not found.");
+    }
+}
+
+function hideLoadingIndicator() {
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) { // Ensure element exists
+        loadingIndicator.style.display = 'none';
+    } else {
+        console.warn("Loading indicator element not found.");
+    }
+}
+
+// Helper function: Syncs arrays from the map and keeps 'cases' sorted
+function updateAvailableCaseDataArraysFromMap() {
+    availableCaseData = Array.from(availableCaseMap.values());
+    // Ensure the 'cases' array for the planner is kept in sync
+    cases = availableCaseData.map(c => ({
+        name: c.name,
+        price: c.price,
+        roi: c.roi,
+        normalizedName: c.normalizedName
+    }));
+    // Sort cases array alphabetically for datalist and consistency
+    cases.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// --- Main function to update prices ---
+async function updateLivePrices() {
+    showLoadingIndicator();
+    showNotification('Refreshing prices...', 'info');
+    console.log("Starting price refresh...");
+
+    try {
+        const rawFetchedCaseData = await window.electronAPI.fetchAllCasePrices();
+
+        const latestFetchedMap = new Map(rawFetchedCaseData.map(caseItem => [caseItem.normalizedName, caseItem]));
+
+        let updatedCount = 0;
+        let newCount = 0;
+
+        // Merge Logic: Iterate through the newly fetched data
+        latestFetchedMap.forEach((fetchedCase, normalizedName) => {
+            const existingCase = availableCaseMap.get(normalizedName);
+
+            if (existingCase) {
+                // Update existing properties
+                existingCase.price = fetchedCase.price;
+                existingCase.steamImageUrl = fetchedCase.steamImageUrl;
+                existingCase.roi = fetchedCase.roi;
+                // Prefer fetched keyCostSteam, fallback to old or default
+                existingCase.keyCostSteam = fetchedCase.keyCostSteam !== null ? fetchedCase.keyCostSteam : existingCase.keyCostSteam;
+                updatedCount++;
             } else {
-                row.style.display = 'none';
+                availableCaseMap.set(normalizedName, fetchedCase);
+                newCount++;
             }
+        });
+
+        // After merging, update the arrays used by UI components from our single source of truth (the map)
+        updateAvailableCaseDataArraysFromMap();
+        console.log('availableCaseData updated. New length:', availableCaseData.length);
+
+        console.log(`UI Update: Processed ${rawFetchedCaseData.length} newly fetched items. Updated ${updatedCount} existing cases, added ${newCount} new cases.`);
+        console.log(`Total unique cases currently available in UI: ${availableCaseData.length}`);
+
+        // --- UI Rendering ---
+        populatePlannerDatalist();
+        sortAndRenderAvailableCases(); // Re-renders the grid based on availableCaseData
+        rebuildTable(); // Rebuilds the planner table based on cases
+        // updateTotals() is called by rebuildTable, no need to call directly here again for initial load
+
+        showNotification('Prices refreshed successfully!', 'success');
+        console.log("Prices refreshed successfully!");
+
+    } catch (error) {
+        console.error("Error updating live prices:", error);
+        showNotification(`Error refreshing prices: ${error.message}`, 'error');
+    } finally {
+        hideLoadingIndicator();
+    }
+}
+
+// --- Functions related to the main grid display ---
+
+// Function to set the sort parameters and trigger rendering
+function sortCases(key, direction) {
+    currentSort = { key, direction };
+    sortAndRenderAvailableCases(); // Call the rendering function
+}
+
+function sortAndRenderAvailableCases() {
+    const gridContainer = document.getElementById('availableCasesGrid');
+    if (!gridContainer) {
+        console.error("Error: availableCasesGrid element not found!");
+        return;
+    }
+    gridContainer.innerHTML = ''; // Clear existing grid
+
+    console.log('Attempting to sort and render cases. availableCaseData length:', availableCaseData.length);
+
+    // Sort the cases based on currentSort global variable
+    const sortedCases = [...availableCaseData].sort((a, b) => {
+        let valA = a[currentSort.key];
+        let valB = b[currentSort.key];
+
+        // Handle null/undefined values for numerical sorts: push them to the end
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            if (valA === null || valA === undefined) valA = currentSort.direction === 'asc' ? Infinity : -Infinity;
+            if (valB === null || valB === undefined) valB = currentSort.direction === 'asc' ? Infinity : -Infinity;
+        }
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+            return currentSort.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        } else {
+            return currentSort.direction === 'asc' ? valA - valB : valB - valA;
         }
     });
-    updateTotals(); 
-}
-window.addEventListener('DOMContentLoaded', async () => {
-    // Initial fetch and render when the app starts
-    await updateLivePrices();
-    if (tableBody.children.length === 0) {
-        createRow(); // Add an initial row to the planner if none exist
-    }
-    updateTotals(); // Calculate initial totals
-    populatePlannerDatalist(); // NEW: Populate datalist on load
-});
 
-addCaseBtn.addEventListener('click', () => createRow());
-refreshPricesBtn.addEventListener('click', () => updateLivePrices());
-
-budgetInput.addEventListener('input', updateTotals);
-taxRateInput.addEventListener('input', updateTotals);
-
-// Sort button event listeners
-sortNameAscBtn.addEventListener('click', () => {
-    currentSort = { type: 'name', order: 'asc' };
-    sortAndRenderAvailableCases();
-});
-sortNameDescBtn.addEventListener('click', () => {
-    currentSort = { type: 'name', order: 'desc' };
-    sortAndRenderAvailableCases();
-});
-sortPriceAscBtn.addEventListener('click', () => {
-    currentSort = { type: 'price', order: 'asc' };
-    sortAndRenderAvailableCases();
-});
-sortPriceDescBtn.addEventListener('click', () => {
-    currentSort = { type: 'price', order: 'desc' };
-    sortAndRenderAvailableCases();
-});
-// NEW: Sort by ROI button listener
-sortRoiBtn.addEventListener('click', () => {
-    // Toggle ROI sort order
-    if (currentSort.type === 'roi' && currentSort.order === 'desc') {
-        currentSort = { type: 'roi', order: 'asc' };
-    } else {
-        currentSort = { type: 'roi', order: 'desc' }; // Default to descending if not currently ROI or if ascending
-    }
-    sortAndRenderAvailableCases();
-});
-
-// NEW: Event listener for the planner search input
-plannerSearchInput.addEventListener('input', filterPlannedCases);
-
-addSelectedCaseBtn.addEventListener('click', addCaseFromSearchBar);
-
-// --- Core Functions ---
-
-function addCaseFromSearchBar() {
-    const selectedCaseName = plannerSearchInput.value.trim();
-
-    if (!selectedCaseName) {
-        alert('Please enter or select a case name to add.');
+    if (sortedCases.length === 0) {
+        gridContainer.innerHTML = '<p>No cases available. Try refreshing prices.</p>';
         return;
     }
 
-    // Try to find the case in the availableCaseData (which has the latest prices)
-    const fullCaseData = availableCaseData.find(item => item.name.toLowerCase() === selectedCaseName.toLowerCase());
+    sortedCases.forEach(caseItem => {
+        const caseCard = document.createElement('div');
+        caseCard.className = 'case-card';
+        caseCard.dataset.caseName = caseItem.name; // Store case name for click handler
 
-    if (fullCaseData) {
-        // Ensure the case exists in the 'cases' array for the planner's dropdowns
-        let caseIndex = cases.findIndex(c => c.name === fullCaseData.name);
-        if (caseIndex === -1) {
-            // If not found, add it to the 'cases' array with its current data
-            cases.push({ 
-                name: fullCaseData.name, 
-                price: fullCaseData.price, 
-                roi: fullCaseData.roi 
-            });
-            caseIndex = cases.length - 1; // Get the index of the newly added case
-            populatePlannerDatalist(); // Re-populate datalist as 'cases' array changed
-        } else {
-            // If found, ensure its price/ROI is updated in case it changed since last fetch
-            cases[caseIndex].price = fullCaseData.price;
-            cases[caseIndex].roi = fullCaseData.roi;
+        // Prefer Steam image if available, fallback to CSROI image if not
+        const imageSrc = caseItem.steamImageUrl || caseItem.csroiImageUrl || '';
+
+        // Display ROI as N/A if null
+        const roiDisplay = caseItem.roi !== null ? (caseItem.roi * 100).toFixed(2) + '%' : 'N/A';
+        const priceDisplay = caseItem.price !== null ? caseItem.price.toFixed(2) : 'N/A';
+
+        caseCard.innerHTML = `
+            <img src="${imageSrc}" alt="${caseItem.name}" class="case-image">
+            <div class="case-name">${caseItem.name}</div>
+            <div class="case-price">Price: $${priceDisplay}</div>
+            <div class="case-roi">ROI: ${roiDisplay}</div>
+            <button class="add-to-planner-btn">Add to Planner</button>
+        `;
+        gridContainer.appendChild(caseCard);
+    });
+
+    // Event delegation for "Add to Planner" buttons on case cards
+    gridContainer.removeEventListener('click', handleGridButtonClick); // Remove previous listener to avoid duplicates
+    gridContainer.addEventListener('click', handleGridButtonClick);
+}
+
+// Handler function for clicks on the grid container
+function handleGridButtonClick(event) {
+    if (event.target.classList.contains('add-to-planner-btn')) {
+        const caseCard = event.target.closest('.case-card');
+        if (caseCard) {
+            const caseName = caseCard.dataset.caseName;
+            addCaseToPlanner(caseName, 1); // Add 1 of the selected case to the planner
         }
-
-        // Add the row to the planner table
-        createRow(caseIndex, 1); // Add with default quantity of 1
-
-        // Clear the search bar and re-filter to show all rows again
-        plannerSearchInput.value = '';
-        filterPlannedCases(); // Call filter function to clear the filter
-    } else {
-        alert(`Case "${selectedCaseName}" not found in available prices. Please check the name or refresh prices.`);
-        console.warn(`Case "${selectedCaseName}" not found in availableCaseData.`);
     }
 }
 
-/**
- * Updates the live prices of all cases by fetching them from Steam
- * via the main process.
- * Then, it rebuilds both tables to reflect the new prices.
- */
-async function updateLivePrices() {
-    refreshPricesBtn.disabled = true; // Disable button during fetch
-    refreshPricesBtn.textContent = 'Refreshing...';
-    availableCasesGrid.innerHTML = '<p>Fetching latest prices...</p>'; // Show loading message
 
-    try {
-        const rawFetchedCaseData = await window.electronAPI.fetchAllCasePrices(); 
-        
-        // --- NEW: Deduplicate fetchedCaseData ---
-        const uniqueCasesMap = new Map(); // Map to store unique cases by name
-        rawFetchedCaseData.forEach(caseItem => {
-            // Use caseItem.name as the key to ensure uniqueness.
-            // If there are duplicates, the last one processed will overwrite previous ones.
-            uniqueCasesMap.set(caseItem.name, caseItem); 
-        });
-        availableCaseData = Array.from(uniqueCasesMap.values()); // Convert Map values back to an array
-        // --- END Deduplication ---
+// --- Functions related to the planner ---
 
-        // Optional: Log the data to console to verify duplicates before/after deduplication
-        // console.log("Raw fetched data (may contain duplicates):", rawFetchedCaseData);
-        // console.log("Deduplicated data for grid:", availableCaseData);
+// Populates the datalist for the case search input
+function populatePlannerDatalist() {
+    const datalist = document.getElementById('caseNamesDatalist');
+    if (!datalist) {
+        console.warn("Datalist element for planner not found.");
+        return;
+    }
+    datalist.innerHTML = ''; // Clear existing options
 
-        // Update prices in the 'cases' array (for the planner table's dropdowns)
-        // Also, add new cases to 'cases' array if they weren't predefined
-        for (const fetchedCase of availableCaseData) { // Use the deduplicated data here
-            let found = false;
-            for (let i = 0; i < cases.length; i++) { // Iterate using index for modification
-                if (cases[i].name === fetchedCase.name) {
-                    cases[i].price = fetchedCase.price;
-                    cases[i].roi = fetchedCase.roi; // Also update ROI in the planner's 'cases' array
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                // Add new cases found during scrape to the 'cases' array for planner dropdowns
-                cases.push({ name: fetchedCase.name, price: fetchedCase.price, roi: fetchedCase.roi });
-            }
-        }
-
-        populatePlannerDatalist(); // NEW: Update datalist after cases array might have changed
-
-        // Apply the current sort order and render the available cases grid
-        sortAndRenderAvailableCases();
-        
-        // Rebuild the planner table to reflect any price updates
-        rebuildTable();
-        
-        // Update totals after all prices are refreshed
-        updateTotals();
-
-    } catch (error) {
-        console.error('Failed to fetch case data:', error);
-        availableCasesGrid.innerHTML = `<p>Error loading cases: ${error.message}. Check console for details.</p>`;
-    } finally {
-        refreshPricesBtn.disabled = false;
-        refreshPricesBtn.textContent = '🔄 Refresh Prices';
-    }
+    cases.forEach(caseItem => {
+        const option = document.createElement('option');
+        option.value = caseItem.name;
+        datalist.appendChild(option);
+    });
 }
 
-/**
- * Sorts the availableCaseData based on currentSort state and then renders the grid.
- */
-function sortAndRenderAvailableCases() {
-    availableCaseData.sort((a, b) => {
-        switch (currentSort.type) {
-            case 'name':
-                const nameA = a.name.toLowerCase();
-                const nameB = b.name.toLowerCase();
-                if (currentSort.order === 'asc') {
-                    return nameA.localeCompare(nameB);
-                } else {
-                    return nameB.localeCompare(nameA);
-                }
-            case 'price':
-                if (currentSort.order === 'asc') {
-                    return a.price - b.price;
-                } else {
-                    return b.price - a.price;
-                }
-            case 'roi': // NEW: ROI sorting logic
-                const roiA = a.roi;
-                const roiB = b.roi;
+// Function called when 'Add Selected Case' button is clicked
+function addCaseFromSearchInput() {
+    const caseInput = document.getElementById('plannerSearchInput');
+    const caseName = caseInput.value.trim();
+    const quantity = 1; // Default to 1, as no explicit quantity input for this button
 
-                // Handle null/N/A ROIs: N/A values always go to the end
-                if (roiA === null && roiB === null) {
-                    return 0; // Both N/A, keep original relative order
-                }
-                if (roiA === null) {
-                    return 1; // A is N/A, send A to the end
-                }
-                if (roiB === null) {
-                    return -1; // B is N/A, send B to the end
-                }
+    if (!caseName) {
+        showNotification('Please enter a case name.', 'error');
+        return;
+    }
 
-                // Compare numerical ROIs
-                if (currentSort.order === 'desc') {
-                    return roiB - roiA; // Descending order (higher ROI first)
-                } else {
-                    return roiA - roiB; // Ascending order (lower ROI first)
-                }
-            default:
-                return 0; // No specific sort
-        }
-    });
-    renderAvailableCasesGrid(); // Always re-render after sort
+    // Call the core logic to add/update the case in the planner
+    addCaseToPlanner(caseName, quantity);
+    caseInput.value = ''; // Clear input field
 }
 
-/**
- * Renders the available cases in the grid format.
- * Assumes availableCaseData contains objects with name, price, roi, csroiImageUrl, and steamImageUrl.
- */
-function renderAvailableCasesGrid() {
-    availableCasesGrid.innerHTML = '';
-    if (availableCaseData.length === 0) {
-        availableCasesGrid.innerHTML = '<p>No case prices available. Try refreshing.</p>';
-        return;
-    }
+// Core logic to add/update a case in the planner table
+function addCaseToPlanner(caseName, quantity) {
+    // Find the case in our master list (cases array derived from map)
+    const foundCase = cases.find(c => c.name === caseName);
 
-    availableCaseData.forEach(caseItem => {
-        const card = document.createElement('div');
-        card.classList.add('case-card');
+    if (!foundCase) {
+        showNotification(`Case "${caseName}" not found in available data. Please refresh prices.`, 'error');
+        return;
+    }
 
-        // Construct the Steam Market URL
-        // We need to encode the case name to be URL-safe
-        const encodedCaseName = encodeURIComponent(caseItem.name);
-        const steamMarketUrl = `https://steamcommunity.com/market/listings/730/${encodedCaseName}`;
+    const plannerTableBody = document.getElementById('caseTableBody');
+    if (!plannerTableBody) {
+        console.error("Planner table body element not found!");
+        return;
+    }
 
-        card.innerHTML = `
-            <h4>
-                <a href="${steamMarketUrl}" target="_blank" rel="noopener noreferrer" class="case-link">
-                    ${caseItem.name}
-                </a>
-            </h4>
-            <img 
-                src="${caseItem.csroiImageUrl || caseItem.steamImageUrl || ''}" 
-                alt="${caseItem.name}" 
-                class="case-image"
-                onerror="this.onerror=null; this.src='${caseItem.steamImageUrl || ''}'; console.error('Image load failed for ${caseItem.name}, falling back to Steam image.');"
-            >
-            <p class="case-roi">${caseItem.roi !== null ? `ROI: ${caseItem.roi.toFixed(2)}%` : 'ROI: N/A'}</p>
-            <p class="case-price">$${caseItem.price.toFixed(2)}</p>
-            <button class="add-to-planner-btn" data-case-name="${caseItem.name}" data-case-price="${caseItem.price}">Add to Planner</button>
-        `;
-        availableCasesGrid.appendChild(card);
-    });
+    // Check if the case is already in the planner table
+    const existingRow = plannerTableBody.querySelector(`tr[data-case-name="${CSS.escape(caseName)}"]`);
 
-    // Add event listeners for "Add to Planner" buttons after rendering
-    document.querySelectorAll('.add-to-planner-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const caseName = event.target.dataset.caseName;
-            
-            // Find the full case data from availableCaseData to ensure all properties are included
-            const fullCaseData = availableCaseData.find(item => item.name === caseName);
-            
-            if (fullCaseData) {
-                // Find or add the case to the main 'cases' array if it's not there
-                let caseIndex = cases.findIndex(c => c.name === caseName);
-                if (caseIndex === -1) {
-                    // Add all relevant properties (name, price, roi for now)
-                    cases.push({ 
-                        name: fullCaseData.name, 
-                        price: fullCaseData.price, 
-                        roi: fullCaseData.roi 
-                    });
-                    caseIndex = cases.length - 1; // Get the index of the newly added case
-                } else {
-                    // Update price and ROI in case it changed (for existing cases in 'cases' array)
-                    cases[caseIndex].price = fullCaseData.price;
-                    cases[caseIndex].roi = fullCaseData.roi;
-                }
-                
-                // Now create the row in the planner table
-                createRow(caseIndex, 1);
-            } else {
-                console.error("Failed to find case data for planner after click:", caseName);
-            }
-        });
-    });
+    if (existingRow) {
+        // Update quantity if already exists
+        const currentQuantity = parseInt(existingRow.querySelector('.case-quantity-input').value);
+        existingRow.querySelector('.case-quantity-input').value = currentQuantity + quantity;
+        showNotification(`Updated quantity for ${caseName}.`, 'success');
+    } else {
+        // Add new row to the planner table
+        const newRow = document.createElement('tr');
+        newRow.dataset.caseName = caseName; // Store case name as data attribute
+
+        newRow.innerHTML = `
+            <td>${caseName}</td>
+            <td class="case-item-price">$${foundCase.price ? foundCase.price.toFixed(2) : 'N/A'}</td>
+            <td><input type="number" class="case-quantity-input" value="${quantity}" min="0"></td>
+            <td class="case-total-cost">Calculating...</td>
+            <td class="case-total-key-cost">Calculating...</td>
+            <td class="case-total-with-keys">Calculating...</td>
+            <td>
+                <button class="remove-case-btn">Remove</button>
+            </td>
+        `;
+        plannerTableBody.appendChild(newRow);
+        showNotification(`Added ${quantity} x ${caseName} to planner.`, 'success');
+    }
+
+    rebuildTable(); // Recalculate totals for all rows
+    // updateTotals() will be called by rebuildTable, so no need to call it directly here
 }
 
-/**
- * Rebuilds the planner table, preserving quantities and selected cases
- * if possible, otherwise resetting.
- */
-function rebuildTable() {
-    const existingRowsData = [];
-    tableBody.querySelectorAll('tr').forEach(row => {
-        const caseSelect = row.children[0].querySelector('select'); // Use querySelector for robustness
-        const qtyInput = row.children[2].querySelector('input'); // Use querySelector for robustness
-        const selectedCaseName = caseSelect.options[caseSelect.selectedIndex].textContent; // Get name, not just index
+// Rebuilds the planner table, used for recalculating totals
+async function rebuildTable() { // Made function async
+    const plannerTableBody = document.getElementById('caseTableBody');
+    if (!plannerTableBody) return;
 
-        // Find the case's current index in the updated 'cases' array
-        const newIndex = cases.findIndex(c => c.name === selectedCaseName);
-        
-        if (newIndex !== -1) {
-            existingRowsData.push({
-                caseIndex: newIndex, // Store the new index
-                quantity: parseInt(qtyInput.value) || 0
-            });
-        } else {
-            console.warn(`Previously selected case "${selectedCaseName}" not found in updated price list. Skipping.`);
-        }
-    });
+    const rows = Array.from(plannerTableBody.querySelectorAll('tr'));
 
-    tableBody.innerHTML = ''; // Clear existing rows
-
-    if (existingRowsData.length > 0) {
-        existingRowsData.forEach(data => {
-            createRow(data.caseIndex, data.quantity);
-        });
-    } else {
-        createRow(); // Add an empty row if no existing data or all failed to map
-    }
-    updateTotals(); // Recalculate totals after rebuilding
-}
+    // Get the current tax rate dynamically
+    const currentTaxRate = getTaxRate(); 
+    console.log(`rebuildTable: Using dynamic Tax Rate: ${currentTaxRate}`);
 
 
-/**
- * Creates a new row in the planner table.
- * @param {number} initialCaseIndex - The index of the case in the 'cases' array to pre-select.
- * @param {number} initialQuantity - The initial quantity for the case.
- */
-function createRow(initialCaseIndex = 0, initialQuantity = 1) {
-    const row = document.createElement('tr');
+    // Use Promise.all to await all normalization calls concurrently for efficiency
+    await Promise.all(rows.map(async row => { // Changed forEach to map with async and awaited Promise.all
+        const caseName = row.dataset.caseName;
+        const quantity = parseInt(row.querySelector('.case-quantity-input').value);
 
-    const caseCell = document.createElement('td');
-    const caseSelect = document.createElement('select');
-    cases.forEach((cs, i) => { // Populate options from the 'cases' array
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = cs.name;
-        caseSelect.appendChild(opt);
-    });
-    // Ensure initialCaseIndex is valid
-    if (initialCaseIndex >= 0 && initialCaseIndex < cases.length) {
-        caseSelect.value = initialCaseIndex;
-    } else {
-        caseSelect.value = 0; // Default to first item if invalid index
-        console.warn(`Invalid initialCaseIndex: ${initialCaseIndex}. Defaulting to 0.`);
-    }
-    caseCell.appendChild(caseSelect);
+        console.log(`rebuildTable: Processing case "${caseName}" with quantity ${quantity}`);
 
-    const costCell = document.createElement('td');
-    const costInput = document.createElement('input');
-    costInput.type = 'number';
-    // Ensure cases[caseSelect.value] exists before accessing price
-    costInput.value = cases[parseInt(caseSelect.value)] ? cases[parseInt(caseSelect.value)].price.toFixed(2) : '0.00';
-    costInput.disabled = true; // Price should be display-only
-    costCell.appendChild(costInput);
+        // Await the asynchronous IPC call for normalization
+        const normalizedCaseName = await window.electronAPI.normalizeCaseName(caseName);
+        console.log(`rebuildTable: Normalized "${caseName}" to "${normalizedCaseName}"`);
 
-    const qtyCell = document.createElement('td');
-    const qtyInput = document.createElement('input');
-    qtyInput.type = 'number';
-    qtyInput.min = 0;
-    qtyInput.value = initialQuantity;
-    qtyCell.appendChild(qtyInput);
+        const caseData = availableCaseMap.get(normalizedCaseName);
+        console.log(`rebuildTable: Fetched caseData for "${normalizedCaseName}":`, caseData);
 
-    const totalCaseCostCell = document.createElement('td');
-    totalCaseCostCell.classList.add('total-case-cost');
+        const caseItemPriceElement = row.querySelector('.case-item-price');
+        const totalCaseCostElement = row.querySelector('.case-total-cost');
+        const totalCaseKeyCostElement = row.querySelector('.case-total-key-cost');
+        const totalWithKeysElement = row.querySelector('.case-total-with-keys');
 
-    const totalWithKeysCell = document.createElement('td');
-    totalWithKeysCell.classList.add('total-with-keys-cost');
+        // Check if caseData exists and has valid price/keyCostSteam
+        if (caseData && caseData.price !== null && typeof caseData.price === 'number') {
+            const casePrice = caseData.price;
+            // Use keyCostSteam from data if available, otherwise use DEFAULT_KEY_PRICE
+            let keyCost = caseData.keyCostSteam !== null && typeof caseData.keyCostSteam === 'number' ? caseData.keyCostSteam : DEFAULT_KEY_PRICE;
 
-    const removeCell = document.createElement('td');
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = 'Remove';
-    removeBtn.classList.add('remove-row-btn');
-    removeBtn.addEventListener('click', () => {
-        row.remove();
-        updateTotals();
-    });
-    removeCell.appendChild(removeBtn);
+            // --- APPLY TAX TO KEY COST HERE (for individual row display) ---
+            const taxedKeyCost = keyCost * (1 + currentTaxRate); // Use dynamic rate
+            console.log(`rebuildTable: For ${caseName}, Original Key Cost: $${keyCost.toFixed(2)}, Taxed Key Cost: $${taxedKeyCost.toFixed(2)}`);
+            // ---------------------------------------------------------------
 
-    row.appendChild(caseCell);
-    row.appendChild(costCell);
-    row.appendChild(qtyCell);
-    row.appendChild(totalCaseCostCell);
-    row.appendChild(totalWithKeysCell);
-    row.appendChild(removeCell);
+            caseItemPriceElement.textContent = `$${casePrice.toFixed(2)}`;
 
-    // Event listeners for this new row
-    caseSelect.addEventListener('change', () => {
-        const newIndex = parseInt(caseSelect.value);
-        costInput.value = cases[newIndex].price.toFixed(2);
-        updateTotals();
-    });
-    qtyInput.addEventListener('input', updateTotals);
+            const totalCaseCost = casePrice * quantity;
+            const totalKeyCost = taxedKeyCost * quantity; // Use the taxed key cost here
+            const totalWithKeys = totalCaseCost + totalKeyCost;
 
-    tableBody.appendChild(row);
+            totalCaseCostElement.textContent = `$${totalCaseCost.toFixed(2)}`;
+            totalCaseKeyCostElement.textContent = `$${totalKeyCost.toFixed(2)}`;
+            totalWithKeysElement.textContent = `$${totalWithKeys.toFixed(2)}`;
 
-
-    updateTotals(); // Update totals whenever a new row is added
-}
-
-/**
- * Calculates and updates all total costs displayed on the page.
- */
-function updateTotals() {
-    const taxRate = parseFloat(taxRateInput.value) / 100 || 0;
-    const budget = parseFloat(budgetInput.value) || 0;
-
-    let grandTotalPreTaxWithKeys = 0;
-    let totalCasesCount = 0;
-    const rows = tableBody.querySelectorAll('tr');
-
-    rows.forEach(row => {
-        // NEW: Skip hidden rows when calculating totals
-        if (row.style.display === 'none') {
-            return; // Skip to the next row
+            [totalCaseCostElement, totalCaseKeyCostElement, totalWithKeysElement].forEach(el => el.classList.remove('no-price'));
+        } else {
+            // Case data not found or missing essential price/key data
+            caseItemPriceElement.textContent = 'N/A';
+            [totalCaseCostElement, totalCaseKeyCostElement, totalWithKeysElement].forEach(el => {
+                el.textContent = 'N/A';
+                el.classList.add('no-price');
+            });
+            console.warn(`WARN: Case "${caseName}" in planner but missing price/key data or not found in available data. Check console for details.`);
         }
+    })); // End Promise.all
 
-        const caseSelect = row.children[0].querySelector('select');
-        const qtyInput = row.children[2].querySelector('input');
-        const totalCaseCostCell = row.children[3];
-        const totalWithKeysCell = row.children[4];
-
-        const caseIndex = parseInt(caseSelect.value);
-        const qty = parseInt(qtyInput.value) || 0;
-        
-        if (cases[caseIndex]) {
-            const price = cases[caseIndex].price;
-            const totalCaseCost = qty * price;
-            const totalWithKeysPreTax = qty * (price + KEY_COST);
-            const totalWithKeysPostTax = totalWithKeysPreTax * (1 + taxRate);
-
-            totalCaseCostCell.textContent = totalCaseCost.toFixed(2);
-            totalWithKeysCell.textContent = totalWithKeysPostTax.toFixed(2);
-
-            grandTotalPreTaxWithKeys += totalWithKeysPreTax;
-            totalCasesCount += qty;
-        } else {
-            totalCaseCostCell.textContent = 'N/A';
-            totalWithKeysCell.textContent = 'N/A';
-        }
-    });
-
-    const finalTotalPostTax = grandTotalPreTaxWithKeys * (1 + taxRate);
-
-    totalCasesEl.textContent = totalCasesCount;
-    totalSpentEl.textContent = finalTotalPostTax.toFixed(2);
-    const leftover = budget - finalTotalPostTax;
-    leftoverEl.textContent = leftover.toFixed(2);
-
-    // --- START OF UPDATED LOGIC FOR LEFTOVER MESSAGE ---
-    if (leftover < 0) {
-        deficitMsg.textContent = `You are $${Math.abs(leftover).toFixed(2)} over budget!`;
-        deficitMsg.style.color = 'red'; // Set message text color to red
-        leftoverEl.style.color = 'red'; // Set numerical leftover color to red
-    } else {
-        deficitMsg.textContent = `You have $${leftover.toFixed(2)} left over.`;
-        deficitMsg.style.color = 'green'; // Set message text color to green
-        leftoverEl.style.color = 'green'; // Set numerical leftover color to green
-    }
-    // Ensure the message is always visible
-    deficitMsg.style.display = 'block'; 
-    // --- END OF UPDATED LOGIC ---
+    updateTotals(); // Ensure overall totals are updated after rebuilding
 }
+
+
+function updateCaseQuantity(caseName, newQuantity) {
+    const plannerTableBody = document.getElementById('caseTableBody');
+    if (!plannerTableBody) return;
+    const row = plannerTableBody.querySelector(`tr[data-case-name="${CSS.escape(caseName)}"]`);
+    if (row) {
+        row.querySelector('.case-quantity-input').value = newQuantity;
+        rebuildTable(); // Recalculate totals for all rows
+        showNotification(`Quantity for ${caseName} updated to ${newQuantity}.`, 'info');
+    }
+}
+
+function removeCaseFromPlanner(caseName) {
+    const plannerTableBody = document.getElementById('caseTableBody');
+    if (!plannerTableBody) return;
+    const row = plannerTableBody.querySelector(`tr[data-case-name="${CSS.escape(caseName)}"]`);
+    if (row) {
+        row.remove();
+        rebuildTable(); // Recalculate totals for all rows
+        showNotification(`Removed ${caseName} from planner.`, 'success');
+    }
+}
+
+function updateTotals() {
+    let totalCostCases = 0; // Total cost of cases only (excluding keys)
+    let totalCostKeys = 0; // Total cost of keys only (including tax)
+    let totalCostWithKeys = 0; // Total (Cases + Keys with tax)
+    let totalExpectedROI = 0; // Total ROI in USD
+    let totalCasesInPlanner = 0;
+
+    // Get the current tax rate dynamically
+    const currentTaxRate = getTaxRate();
+    console.log(`updateTotals: Using dynamic Tax Rate: ${currentTaxRate}`);
+
+
+    const plannerTableBody = document.getElementById('caseTableBody');
+    if (!plannerTableBody) return;
+
+    const rows = plannerTableBody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const caseName = row.dataset.caseName;
+        const quantity = parseInt(row.querySelector('.case-quantity-input').value);
+
+        const caseData = availableCaseMap.get(window.electronAPI.normalizeCaseNameSync(caseName));
+
+        if (caseData && caseData.price !== null && typeof caseData.price === 'number') {
+            const casePrice = caseData.price;
+            const caseRoi = caseData.roi; // This can be null
+
+            // Get key cost and apply tax for overall totals calculation
+            let keyCostPerCase = caseData.keyCostSteam !== null && typeof caseData.keyCostSteam === 'number' ? caseData.keyCostSteam : DEFAULT_KEY_PRICE;
+            keyCostPerCase = keyCostPerCase * (1 + currentTaxRate); // Apply dynamic tax here for cumulative total
+            console.log(`updateTotals: For ${caseName}, Taxed Key Cost Per Case: $${keyCostPerCase.toFixed(2)}`);
+
+            totalCostCases += casePrice * quantity;
+            totalCostKeys += keyCostPerCase * quantity; // Add taxed key cost
+            totalCostWithKeys += (casePrice * quantity) + (keyCostPerCase * quantity); // Total cost includes taxed keys
+            
+            // Only add to ROI if ROI data is available
+            if (caseRoi !== null && typeof caseRoi === 'number') {
+                totalExpectedROI += (casePrice * caseRoi) * quantity;
+            }
+            totalCasesInPlanner += quantity;
+        }
+    });
+
+    // Update overall totals in the UI
+    document.getElementById('totalCases').textContent = totalCasesInPlanner;
+    document.getElementById('totalSpent').textContent = totalCostCases.toFixed(2); // Total cost of cases only
+
+    const budgetElement = document.getElementById('budget');
+    // Ensure budget is read correctly, default to 0 if NaN or not found
+    const budget = budgetElement ? parseFloat(budgetElement.value) || 0 : 0; 
+    console.log('updateTotals: Current Budget:', budget);
+    console.log('updateTotals: Total Cost With Keys:', totalCostWithKeys);
+
+    const leftover = budget - totalCostWithKeys;
+    document.getElementById('leftover').textContent = leftover.toFixed(2);
+    console.log('updateTotals: Leftover:', leftover);
+
+    // Update the key cost display with the total taxed key cost
+    document.getElementById('total-cost-display').textContent = totalCostWithKeys.toFixed(2); // This includes taxed keys
+    document.getElementById('total-keys-needed-display').textContent = totalCasesInPlanner;
+    document.getElementById('total-expected-roi-display').textContent = totalExpectedROI.toFixed(2); // Display total expected ROI
+
+    // Calculate remaining keys after considering total cases
+    const remainingKeys = keyQuantity - totalCasesInPlanner;
+    const remainingKeysDisplay = document.getElementById('remaining-keys-display');
+    if (remainingKeysDisplay) {
+        remainingKeysDisplay.textContent = remainingKeys;
+        remainingKeysDisplay.style.color = remainingKeys >= 0 ? 'green' : 'red';
+    }
+
+    // Save planner data after updating totals
+    // If you need to save the planner state (which cases and quantities are in it),
+    // you'll need to pass an array of objects: [{ name: 'Case A', quantity: 5 }, { name: 'Case B', quantity: 2 }]
+    // For now, this line is commented out as `plannerCases` only stores names, not quantities.
+    // await window.electronAPI.savePlannerData(plannerCases);
+}
+
+
+// Initial load of prices when the app starts
+document.addEventListener('DOMContentLoaded', updateLivePrices);

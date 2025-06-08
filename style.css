@@ -1,267 +1,380 @@
-body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background-color: #f2f2f2;
-    color: #333; /* Added: General text color */
+/* General Body and HTML Styling */
+body, html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern, clean font */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    min-height: 100vh; /* Ensure body takes full viewport height */
+
+    /* Background image from your old CSS */
+    background-image: url('./cs2bg.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    background-color: #333; /* Fallback color */
 }
 
-h2, h3 {
-    text-align: center; /* Centered headings */
-    margin-top: 20px;
-    margin-bottom: 15px;
+/* Wrapper for Content (to make it readable over background) */
+.content-wrapper {
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white background */
+    padding: 25px; /* Slightly more padding */
+    border-radius: 10px; /* More rounded corners */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2); /* Stronger, softer shadow */
+    margin: 30px auto; /* Centers the wrapper horizontally and adds more top/bottom margin */
+    max-width: 1200px; /* Adjusted max width for better content display */
+    min-width: 600px;
+    width: 90%; /* Responsive width */
+}
+
+/* Header Styling (inside content-wrapper, so it inherits background) */
+header {
+    background-color: #282c34; /* Dark header */
+    color: #fff;
+    padding: 1.5em 0;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: -25px -25px 20px -25px; /* Adjust to sit at top of wrapper */
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.2em;
+    letter-spacing: 1px;
+}
+
+/* General Text Colors to ensure readability on transparent background */
+h2, h3, h4, p, label, th, td,
+.summary-line-group p,
+#deficitMessage {
+    color: #333; /* Dark gray for readability */
+    text-shadow: none; /* Ensure no conflicting shadows */
 }
 
 hr {
-    margin: 20px 0; /* Spacing for horizontal rules */
+    margin: 20px 0;
     border: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #ddd; /* Lighter separator */
 }
 
-/* --- Controls Section Styles (New Flexbox Layout) --- */
+/* --- Controls Section Styles --- */
 .controls {
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap on smaller screens if needed */
-    justify-content: space-between; /* Pushes input group to left, refresh button to right */
-    align-items: flex-end; /* Align items at the bottom */
-    margin-bottom: 20px;
-    gap: 15px; /* Spacing between the input group and the refresh button */
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 25px; /* More space below controls */
+    gap: 20px; /* Increased gap */
 }
 
-.input-line-group { /* Wrapper for budget, key cost, tax rate labels */
+.input-line-group {
     display: flex;
-    flex-wrap: wrap; /* Allow labels to wrap if screen is too narrow */
-    gap: 20px; /* Space between each label/input pair */
-    align-items: center; /* Vertically align items in the group */
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
 }
 
 .controls label {
-    white-space: nowrap; /* Prevent labels from breaking onto multiple lines */
+    white-space: nowrap;
+    font-weight: bold; /* Make labels stand out */
 }
 
-/* Specific styling for inputs within the controls section */
 .controls input[type="number"],
-.controls input[type="text"] { /* Applies to budget and taxRate inputs */
-    width: 80px; /* Adjusted width for these inputs for a tighter line */
-    padding: 5px;
+.controls input[type="text"] {
+    width: 90px; /* Slightly wider inputs */
+    padding: 8px; /* More padding */
     border: 1px solid #ccc;
-    border-radius: 4px; /* Slightly more rounded */
+    border-radius: 5px;
+    font-size: 1em;
 }
 
-/* --- Table Styles --- */
-table {
-    border-collapse: collapse;
-    background: white;
-    width: 100%;
-    margin-bottom: 20px; /* Add some space below the table */
-    table-layout: fixed; /* Makes column widths more predictable */
-}
-th, td {
-    padding: 10px;
-    text-align: left;
-    border: 1px solid #ddd; /* Add borders for better table appearance */
-    vertical-align: middle; /* Vertically align content in the middle of cells */
-}
-thead th {
-    background-color: #e9e9e9;
+/* --- Available Cases Grid Section (Now uses .case-grid and .case-card) --- */
+#available-cases-section h2 {
+    color: #282c34;
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 10px;
 }
 
-/* Styles for inputs and selects specifically within the table body cells */
-#caseTableBody select,
-#caseTableBody input[type="number"] {
-    width: 100%; /* Make them fill their parent cell */
-    box-sizing: border-box; /* Include padding and border in the element's total width */
-}
-
-/* Specific Column Widths for the planning table */
-#caseTableBody td:nth-child(1) { /* Case Column */
-    width: 28%; /* Increased from 25% to give more room for long names */
-}
-#caseTableBody td:nth-child(2) { /* Case Cost ($) */
-    width: 13%;
-}
-#caseTableBody td:nth-child(3) { /* Quantity */
-    width: 10%;
-}
-#caseTableBody td:nth-child(4) { /* Total Case Cost ($) */
-    width: 15%;
-}
-#caseTableBody td:nth-child(5) { /* Total w/ Keys ($) */
-    width: 18%; /* Adjusted to make total sum 100% with other new widths */
-}
-#caseTableBody td:nth-child(6) { /* Actions (Remove button) */
-    width: 16%; /* Adjusted to make total sum 100% with other new widths */
-}
-
-/* --- Summary Section Styles (New Flexbox Layout) --- */
-.summary-line-group { /* New container for Total Cases, Spent, Leftover */
-    display: flex;
-    flex-wrap: wrap; /* Allow summary items to wrap on smaller screens */
-    justify-content: space-around; /* Distribute items evenly with space around them */
-    align-items: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 5px 0;
-    border-top: 1px solid #eee; /* Top line for separation */
-    border-bottom: 1px solid #eee; /* Bottom line for separation */
-}
-
-.summary-line-group p {
-    margin: 5px 15px; /* Add some horizontal margin around each paragraph */
-    white-space: nowrap; /* Prevent summary texts from breaking */
-    font-weight: bold; /* Make summary texts bold (similar to original .result) */
-}
-
-/* Deficit message */
-.deficit {
-    color: red;
-    margin-top: 5px; /* Reduced margin */
-    display: block !important; /* Override inline style from JS when it should be visible */
-    font-weight: bold; /* Ensure it's bold */
-    text-align: center; /* Center the deficit message */
-}
-
-/* --- Button Styles (Combined & Enhanced) --- */
-button {
-    padding: 8px 15px;
-    border: 1px solid #007bff; /* Added border for better visual definition */
-    border-radius: 4px; /* Consistent border radius */
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    font-size: 14px; /* Kept existing font size */
-    margin-right: 5px; /* Spacing between buttons (kept for general buttons) */
-    transition: background-color 0.2s, border-color 0.2s; /* Smooth transition on hover */
-}
-button:hover {
-    background-color: #0056b3;
-    border-color: #0056b3; /* Darker border on hover */
-}
-button:disabled {
-    background-color: #cccccc;
-    border-color: #999999; /* Greyer border when disabled */
-    cursor: not-allowed;
-}
-
-/* --- Available Cases Grid Styles --- */
 .sort-controls {
-    margin-bottom: 15px;
-    display: flex; /* Arrange buttons in a row */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 10px; /* Increased gap for better spacing between sort buttons */
-    justify-content: center; /* Center the sort buttons */
+    margin-bottom: 20px; /* More space below sort buttons */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px; /* Adjusted gap */
+    justify-content: center;
 }
 
 .case-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Responsive grid */
-    gap: 15px; /* Space between cards */
-    padding: 10px;
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    gap: 25px; /* More space between cards */
+    padding: 20px 0; /* Padding inside the grid container */
+    justify-content: center;
+    align-items: stretch;
 }
 
 .case-card {
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
-    padding: 10px;
-    background-color: #f9f9f9;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Softer, larger shadow */
+    padding: 15px;
     text-align: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effects */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 230px; /* Increased to give more vertical space for images and content */
+    justify-content: space-between; /* Push button to bottom */
+    min-height: 280px; /* Increased min-height for better balance */
 }
 
-.case-card h4 {
-    margin-top: 0;
-    margin-bottom: 5px; /* Space between title and image */
-    font-size: 1em; /* Kept original size */
-    color: #333;
-    word-break: break-word; /* Prevent long names from overflowing */
-    min-height: 3em; /* Give enough space for longer names on multiple lines */
-    display: flex; /* Added for vertical centering if name is short */
-    align-items: center; /* Vertically center name if it's short */
-    justify-content: center; /* Horizontally center name */
+.case-card:hover {
+    transform: translateY(-5px); /* Lift card on hover */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* More prominent shadow on hover */
 }
 
-/* Styles for the case images within case-card */
-.case-card .case-image {
-    max-width: 90%;
-    max-height: 120px; /* Increased to allow images to be larger, adjust as needed */
+.case-card img { /* Targeting the image within the card */
+    max-width: 120px; /* Slightly larger image */
     height: auto;
-    object-fit: contain;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    background-color: #eee;
-    padding: 2px;
-    margin-left: auto;
-    margin-right: auto;
-    display: block; /* Ensures margins auto work correctly */
+    margin: 0 auto 15px auto; /* Center image and add more bottom margin */
+    border-radius: 8px; /* More rounded image corners */
+    display: block; /* Ensures auto margins work */
 }
 
-.case-card .case-roi {
-    font-size: 0.85em; /* Slightly smaller than price */
-    color: #161616; /* Greyish color for subtlety */
-    margin-top: 0; /* Remove top margin from the default paragraph */
-    margin-bottom: 2px; /* Small space between ROI and price */
-    font-weight: normal; /* Ensure it's not bold */
+.case-card h3 { /* Changed h4 to h3 based on your renderer.js snippet I previously provided */
+    font-size: 1.2em; /* Slightly larger title */
+    margin: 10px 0;
+    min-height: 50px; /* More consistent height for titles */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.case-card .case-price {
-    margin: 5px 0; /* Retained margin */
-    font-size: 1.1em; /* Retained font size */
-    font-weight: bold; /* Retained bold */
-    color: #28a745; /* Retained green color for price */
+.case-card h3 a { /* Styling for the hyperlink within the h3 */
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-.case-card .add-to-planner-btn {
-    background-color: #28a745; /* Green for add button */
+.case-card h3 a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.case-card p {
+    font-size: 0.95em;
+    margin: 5px 0;
+    color: #555;
+}
+
+.case-card .add-to-planner-btn { /* Specific styling for the button inside the card */
+    background-color: #28a745; /* Green for add action */
     color: white;
     border: none;
-    padding: 8px 10px;
-    border-radius: 3px;
+    padding: 10px 15px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 0.9em;
-    margin-top: auto; /* Pushes button to the bottom of the flex container */
-    width: 100%; /* Make button fill card width */
+    margin-top: auto; /* Pushes button to the bottom */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    width: 100%; /* Full width button */
 }
 
 .case-card .add-to-planner-btn:hover {
     background-color: #218838;
+    transform: translateY(-1px);
 }
 
+.case-card .add-to-planner-btn:active {
+    transform: translateY(0);
+}
+
+
+/* --- Planner Section Styling --- */
+#planner-section {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    margin-top: 40px;
+}
+
+#planner-section h2 {
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Planner Search Container */
 .planner-search-container {
-    margin-top: 15px; /* Space from controls above */
-    margin-bottom: 15px; /* Space from hr below */
-    text-align: left; /* Align to the left */
+    margin-top: 15px;
+    margin-bottom: 25px; /* More space */
+    display: flex; /* Use flexbox for alignment */
+    gap: 15px; /* Space between input and button */
+    align-items: center; /* Vertically align */
+    justify-content: center; /* Center the search components */
 }
 
 #plannerSearchInput {
-    width: 280px; /* Adjust width as needed */
-    padding: 8px 10px;
+    flex-grow: 1; /* Allow input to take available space */
+    max-width: 300px; /* Limit input width */
+    padding: 10px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 5px;
     font-size: 1em;
 }
 
 #addSelectedCaseBtn {
-    padding: 8px 15px;
-    background-color: #28a745; /* Green color */
+    background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 4px;
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 1em;
     transition: background-color 0.2s ease;
 }
 
 #addSelectedCaseBtn:hover {
-    background-color: #218838; /* Darker green on hover */
+    background-color: #218838;
 }
 
 #addSelectedCaseBtn:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+}
+
+/* --- Planner Table Styling --- */
+#planner-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#planner-table th,
+#planner-table td {
+    border: 1px solid #eee;
+    padding: 12px 15px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+#planner-table th {
+    background-color: #e9ecef;
+    font-weight: bold;
+    color: #555;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+#planner-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#planner-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Styles for inputs and selects specifically within the table body cells */
+#planner-table select, /* Changed from #caseTableBody to #planner-table for consistency */
+#planner-table input[type="number"] { /* Changed from #caseTableBody */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px; /* Slightly less padding to fit better */
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 0.95em;
+}
+
+/* Specific Column Widths for the planning table */
+#planner-table td:nth-child(1) { /* Case Column */
+    width: 28%;
+}
+#planner-table td:nth-child(2) { /* Case Cost ($) */
+    width: 13%;
+}
+#planner-table td:nth-child(3) { /* Quantity */
+    width: 10%;
+}
+#planner-table td:nth-child(4) { /* Total Case Cost ($) */
+    width: 15%;
+}
+#planner-table td:nth-child(5) { /* Total w/ Keys ($) */
+    width: 18%;
+}
+#planner-table td:nth-child(6) { /* Actions (Remove button) */
+    width: 16%;
+}
+
+/* --- Summary Section Styles --- */
+.summary-line-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 20px; /* More space */
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-line-group p {
+    margin: 5px 15px;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 1.05em; /* Slightly larger */
+}
+
+/* Deficit message */
+.deficit {
+    color: #dc3545; /* Red color for deficit */
+    margin-top: 10px;
+    display: block !important;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+/* Total ROI Display */
+#total-roi-display {
+    text-align: right;
+    font-size: 1.5em; /* Slightly larger */
+    font-weight: bold;
+    margin-top: 25px; /* More space */
+    padding: 18px; /* More padding */
+    background-color: #e6ffed;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    color: #28a745;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+}
+
+/* Remove button in planner table */
+.remove-case-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s ease;
+}
+
+.remove-case-btn:hover {
+    background-color: #c82333;
+}
+
+/* No Cases Message */
+#no-cases-message {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+    font-style: italic;
 }
