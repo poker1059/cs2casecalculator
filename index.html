@@ -18,6 +18,11 @@
         <button id="refreshPricesBtn">🔄 Refresh Prices</button>
     </div>
 
+    <div class="planner-search-container">
+        <input type="text" id="plannerSearchInput" placeholder="Search planned cases..." list="caseNamesDatalist">
+        <datalist id="caseNamesDatalist"></datalist>
+        <button id="addSelectedCaseBtn">Add Selected Case</button> </div>
+
     <hr>
 
     <h3>Your Planned Cases</h3>
@@ -43,7 +48,7 @@
         <p>Total Spent: $<span id="totalSpent">0.00</span></p>
         <p>Leftover Balance: $<span id="leftover">0.00</span></p>
     </div>
-    <p id="deficitMessage" class="deficit" style="display: none;"></p> 
+    <p id="deficitMessage" class="deficit"></p>
 
     <hr>
 

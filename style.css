@@ -231,3 +231,37 @@ button:disabled {
 .case-card .add-to-planner-btn:hover {
     background-color: #218838;
 }
+
+.planner-search-container {
+    margin-top: 15px; /* Space from controls above */
+    margin-bottom: 15px; /* Space from hr below */
+    text-align: left; /* Align to the left */
+}
+
+#plannerSearchInput {
+    width: 280px; /* Adjust width as needed */
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+#addSelectedCaseBtn {
+    padding: 8px 15px;
+    background-color: #28a745; /* Green color */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+
+#addSelectedCaseBtn:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+
+#addSelectedCaseBtn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
