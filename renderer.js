@@ -254,10 +254,12 @@ function sortAndRenderAvailableCases() {
         // Display ROI as N/A if null
         const roiDisplay = caseItem.roi !== null ? (caseItem.roi * 100).toFixed(2) + '%' : 'N/A';
         const priceDisplay = caseItem.price !== null ? caseItem.price.toFixed(2) : 'N/A';
-
+        const marketUrl = generateSteamMarketUrl(caseItem.name); // Generate the URL
+        
         caseCard.innerHTML = `
             <img src="${imageSrc}" alt="${caseItem.name}" class="case-image">
-            <div class="case-name">${caseItem.name}</div>
+            <div class="case-name">
+                <a href="${marketUrl}" target="_blank">${caseItem.name}</a> 
             <div class="case-price">Price: $${priceDisplay}</div>
             <div class="case-roi">ROI: ${roiDisplay}</div>
             <button class="add-to-planner-btn">Add to Planner</button>
@@ -281,6 +283,11 @@ function handleGridButtonClick(event) {
     }
 }
 
+// Utility function to generate Steam Market URL for a case
+function generateSteamMarketUrl(caseName) {
+    const encodedName = encodeURIComponent(caseName);
+    return `https://steamcommunity.com/market/listings/730/${encodedName}`;
+}
 
 // --- Functions related to the planner ---
 
@@ -518,12 +525,12 @@ function updateTotals() {
     document.getElementById('total-expected-roi-display').textContent = totalExpectedROI.toFixed(2); // Display total expected ROI
 
     // Calculate remaining keys after considering total cases
-    const remainingKeys = keyQuantity - totalCasesInPlanner;
-    const remainingKeysDisplay = document.getElementById('remaining-keys-display');
-    if (remainingKeysDisplay) {
-        remainingKeysDisplay.textContent = remainingKeys;
-        remainingKeysDisplay.style.color = remainingKeys >= 0 ? 'green' : 'red';
-    }
+    // const remainingKeys = keyQuantity - totalCasesInPlanner;
+    // const remainingKeysDisplay = document.getElementById('remaining-keys-display');
+    // if (remainingKeysDisplay) {
+    //     remainingKeysDisplay.textContent = remainingKeys;
+    //     remainingKeysDisplay.style.color = remainingKeys >= 0 ? 'green' : 'red';
+    // }
 
     // Save planner data after updating totals
     // If you need to save the planner state (which cases and quantities are in it),

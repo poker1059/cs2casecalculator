@@ -15,7 +15,7 @@
                 <label>Total Money Available: $<input type="number" id="budget" value="25.00" step="0.01" /></label>
                 <label>Key Cost: $<span id="keyCostDisplay">2.49</span></label>
                 <label for="taxRateInput">Tax Rate (%):</label>
-                <input type="number" id="taxRateInput" value="15" min="0" step="0.01">
+                <input type="number" id="taxRateInput" value="0" min="0" step="0.01">
             </div>
             <button id="refresh-prices-btn">🔄 Refresh Prices</button>
         </div>
@@ -50,16 +50,13 @@
 
         <div class="summary-line-group">
             <p>Total Cases: <span id="totalCases">0</span></p>
-            <p>Total Spent: $<span id="totalSpent">0.00</span></p>
+            <p>Total Spent (Cases): $<span id="totalSpent">0.00</span></p>
             <p><span id="leftoverLabel">Amount Leftover</span>: $<span id="leftover">0.00</span></p> 
             
             <p>Total Cost (Cases + Keys): $<span id="total-cost-display">0.00</span></p>
-            <p>Keys Needed (for cases): <span id="total-keys-needed-display">0</span></p>
+            <p>Keys Needed: <span id="total-keys-needed-display">0</span></p>
             <p>Expected ROI (Net Gain): $<span id="total-expected-roi-display">0.00</span></p>
-            <p>
-                Your Keys: <input type="number" id="key-quantity-input" value="0" min="0" style="width: 60px;">
-                Remaining Keys: <span id="remaining-keys-display">0</span>
-            </p>
+
         </div>
 
         <hr>

@@ -377,4 +377,28 @@ hr {
     color: #777;
     padding: 20px;
     font-style: italic;
+
+/* Apply text-align, min-height, flex properties to the div holding the name */
+.case-card .case-name {
+    font-size: 1.2em;
+    margin: 10px 0;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center; /* Ensure text is centered within the div */
+}
+
+/* Apply hyperlink specific styles directly to the anchor tag */
+.case-card .case-name a {
+    color: #007bff; /* Blue color for links */
+    text-decoration: none; /* No underline by default */
+    transition: color 0.2s ease;
+    /* You might want to remove padding/margin if inherited from elsewhere */
+}
+
+.case-card .case-name a:hover {
+    color: #0056b3; /* Darker blue on hover */
+    text-decoration: underline; /* Underline on hover */
+}
 }
